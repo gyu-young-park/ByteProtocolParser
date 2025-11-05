@@ -4,27 +4,64 @@ import io.github.gyuyoungpark.ByteProtocolParser.annotation.ByteProtocolField;
 import io.github.gyuyoungpark.ByteProtocolParser.annotation.ByteProtocolMessage;
 
 import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class ByteProtocolParser implements IByteProtocolParser {
-    public static void Parse(byte[] bytes, Object instance) {
+
+    public void parse(byte[] bytes, Object instance) {
         Class<?> clazz = instance.getClass();
-        ByteProtocolMessage byteProtocolMessage = clazz.getAnnotation(ByteProtocolMessage.class);
-        if (byteProtocolMessage == null) throw new IllegalArgumentException(clazz.getName() + " does not have byte protocol message annotation");
 
-        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);;
-        for (Field field: clazz.getFields()) {
-            ByteProtocolField byteProtocolField = field.getAnnotation(ByteProtocolField.class);
-            if (byteProtocolField == null) continue;
-            field.setAccessible(true);
+        if (!clazz.isAnnotationPresent(ByteProtocolMessage.class)) {
+            throw new IllegalArgumentException(clazz.getName() + " is not a @ByteProtocolMessage");
+        }
 
-            int start = byteProtocolField.start();
-            int length = byteProtocolField.length();
-            byte[] buffer = new byte[length];
-            byteBuffer.get(buffer, start, length);
+        for (Field field : clazz.getDeclaredFields()) {
+            ByteProtocolField annotation = field.getAnnotation(ByteProtocolField.class);
+            if (annotation == null) continue;
 
+            int start = annotation.start();
+            int length = annotation.length();
 
+            if (start < 0 || start + length > bytes.length) {
+                throw new IllegalArgumentException(String.format(
+                        "Invalid range: field=%s start=%d length=%d (bytes len=%d)",
+                        field.getName(), start, length, bytes.length
+                ));
+            }
+
+            try {
+                field.setAccessible(true);
+                Object value = parseField(bytes, start, length, field.getType());
+                field.set(instance, value);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse field " + field.getName(), e);
+            }
         }
     }
 
+    private Object parseField(byte[] bytes, int start, int length, Class<?> type) {
+        // ✅ String
+        if (type == String.class) {
+            return new String(bytes, start, length, StandardCharsets.UTF_8).trim();
+        }
+
+        // ✅ Primitive types or wrappers
+        long numeric = 0;
+        for (int i = 0; i < length; i++) {
+            numeric = (numeric << 8) | (bytes[start + i] & 0xFF);
+        }
+
+        if (type == byte.class || type == Byte.class)
+            return (byte) numeric;
+        if (type == short.class || type == Short.class)
+            return (short) numeric;
+        if (type == int.class || type == Integer.class)
+            return (int) numeric;
+        if (type == long.class || type == Long.class)
+            return numeric;
+        if (type == boolean.class || type == Boolean.class)
+            return numeric != 0;
+
+        throw new IllegalArgumentException("Unsupported field type: " + type);
+    }
 }
