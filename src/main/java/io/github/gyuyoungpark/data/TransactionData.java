@@ -1,7 +1,7 @@
 package io.github.gyuyoungpark.data;
 
-import io.github.gyuyoungpark.ByteProtocolParser.annotation.ByteProtocolField;
-import io.github.gyuyoungpark.ByteProtocolParser.annotation.ByteProtocolMessage;
+import io.github.gyuyoungpark.parser.byteprotocol.annotation.ByteProtocolField;
+import io.github.gyuyoungpark.parser.byteprotocol.annotation.ByteProtocolMessage;
 
 /*
 * FFFFFFFF 0A EB01 FFFA 1 202512251647

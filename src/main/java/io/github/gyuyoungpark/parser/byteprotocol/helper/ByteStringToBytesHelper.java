@@ -1,4 +1,4 @@
-package io.github.gyuyoungpark.ByteProtocolParser.helper;
+package io.github.gyuyoungpark.parser.byteprotocol.helper;
 
 public class ByteStringToBytesHelper {
     public static byte[] hexStringToBytes(String hex) {
@@ -25,5 +25,4 @@ public class ByteStringToBytesHelper {
         if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
         throw new IllegalArgumentException("Invalid hex char: " + ch);
     }
-
 }

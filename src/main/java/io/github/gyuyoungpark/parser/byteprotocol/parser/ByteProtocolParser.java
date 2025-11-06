@@ -1,14 +1,17 @@
-package io.github.gyuyoungpark.ByteProtocolParser.parser;
+package io.github.gyuyoungpark.parser.byteprotocol.parser;
 
-import io.github.gyuyoungpark.ByteProtocolParser.annotation.ByteProtocolField;
-import io.github.gyuyoungpark.ByteProtocolParser.annotation.ByteProtocolMessage;
+import io.github.gyuyoungpark.parser.byteprotocol.annotation.ByteProtocolField;
+import io.github.gyuyoungpark.parser.byteprotocol.annotation.ByteProtocolMessage;
+import io.github.gyuyoungpark.parser.IByteParser;
+import io.github.gyuyoungpark.parser.byteprotocol.helper.ByteStringToBytesHelper;
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
-public class ByteProtocolParser implements IByteProtocolParser {
+public class ByteProtocolParser implements IByteParser {
 
-    public void parse(byte[] bytes, Object instance) {
+    public void parse(String data, Object instance) {
+        byte[] bytes = ByteStringToBytesHelper.hexStringToBytes(data);
         Class<?> clazz = instance.getClass();
 
         if (!clazz.isAnnotationPresent(ByteProtocolMessage.class)) {
@@ -40,12 +43,10 @@ public class ByteProtocolParser implements IByteProtocolParser {
     }
 
     private Object parseField(byte[] bytes, int start, int length, Class<?> type) {
-        // ✅ String
         if (type == String.class) {
             return new String(bytes, start, length, StandardCharsets.UTF_8).trim();
         }
 
-        // ✅ Primitive types or wrappers
         long numeric = 0;
         for (int i = 0; i < length; i++) {
             numeric = (numeric << 8) | (bytes[start + i] & 0xFF);
